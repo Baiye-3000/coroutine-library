@@ -77,6 +77,11 @@ benchmarks/run_benchmarks.sh --mode baseline --output-dir /tmp/coroutine-m0-benc
 
 ## M0 门禁状态
 
-M0 测试已完成，满足提交和推送条件。当前仅剩创建 M0 提交、推送到目标远端并将提交号补入本报告。
+M0 测试已完成，满足提交和推送条件。
+
+- M0 实现提交：`1c84909`（`M0: establish runtime build and baseline`）
+- 目标远端：`https://github.com/Baiye-3000/coroutine-library.git`
+- 已推送分支：`feature-x`
+- 报告修正提交：待本次报告更新提交后补充
 
 M0 在 Linux 环境完成后，必须追加三次原始输出路径、汇总统计、实际提交号和远端分支，不得删除本节环境限制记录。
