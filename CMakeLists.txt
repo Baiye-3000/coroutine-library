@@ -20,6 +20,8 @@ add_library(coroutine_runtime STATIC
     src/config.cpp
     src/load_balancer.cpp
     src/metrics_collector.cpp
+    src/scheduler.cpp
+    src/work_stealing_deque.cpp
 )
 target_include_directories(coroutine_runtime PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
