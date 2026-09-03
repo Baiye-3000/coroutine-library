@@ -97,9 +97,12 @@ ssize_t send_wait(int fd, const void* buffer, size_t count, int flags) {
 }
 
 int connect_wait(int fd, const sockaddr* address, socklen_t length) {
+    const auto flags = ::fcntl(fd, F_GETFL, 0);
+    const bool originally_nonblocking = flags >= 0 && (flags & O_NONBLOCK) != 0;
+    if (flags >= 0 && !originally_nonblocking) (void)::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
     for (;;) {
         const auto result = static_cast<int>(::syscall(SYS_connect, fd, address, length));
-        if (result == 0 || (errno != EINPROGRESS && errno != EALREADY && errno != EAGAIN) || !enabled || Coroutine::current() == nullptr) return result;
+        if (result == 0 || (errno != EINPROGRESS && errno != EALREADY && errno != EAGAIN) || originally_nonblocking || !enabled || Coroutine::current() == nullptr) return result;
         auto* loop = Scheduler::current_event_loop();
         auto owner = Coroutine::current_owner();
         if (loop == nullptr || !owner) return result;

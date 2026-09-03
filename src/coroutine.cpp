@@ -72,7 +72,7 @@ bool Coroutine::wait() {
     current_coroutine->impl_->state = CoroutineState::waiting;
     auto* self = current_coroutine;
     const auto result = swapcontext(&self->impl_->context, &self->impl_->caller) == 0;
-    current_coroutine = nullptr;
+    current_coroutine = self;
     if (result && !self->impl_->cancelled) self->impl_->state = CoroutineState::running;
     return result;
 }

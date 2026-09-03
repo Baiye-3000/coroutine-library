@@ -69,3 +69,8 @@ add_executable(poll_hook_test integration/poll_hook_test.cpp)
 target_link_libraries(poll_hook_test PRIVATE coroutine_runtime)
 target_compile_options(poll_hook_test PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic>)
 add_test(NAME poll_hook_test COMMAND poll_hook_test)
+
+add_executable(echo_server_test integration/echo_server_test.cpp)
+target_link_libraries(echo_server_test PRIVATE coroutine_runtime)
+target_compile_options(echo_server_test PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic>)
+add_test(NAME echo_server_test COMMAND echo_server_test)
