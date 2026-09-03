@@ -114,3 +114,18 @@ ab -n 100 -c 10  http://127.0.0.1:8080/
 这些问题也是面试官经常会问到的，性能测试也是比较容易体现出我们思考和能力的环节，进行详细的性能也会成为项目的一大亮点。 
 
 该部分在 [协程库项目专栏](https://programmercarl.com/other/project_coroutine.html) 有详细讲解，以本项目、libco协程库、libevent网络库以及原生epoll分别编写单线程回声服务器，使用ApacheBench测试工具分别进行压力测试。
+
+## V2 重构进度
+
+V2 重构运行时与旧版 `fiber_lib/` 并行维护。规格、设计、任务和验收清单位于 `docs/refactor-v2/`。
+
+Linux 环境下使用统一入口构建和运行 M0 测试：
+
+```shell
+cmake --preset debug
+cmake --build --preset debug
+ctest --test-dir build/debug --output-on-failure
+benchmarks/run_benchmarks.sh --mode baseline
+```
+
+M0 基线记录见 `docs/refactor-v2/reports/m0-baseline.md`，指标定义见 `docs/refactor-v2/benchmarks.md`。当前 `fiber_lib/` 目录是保留的旧版教学代码，不属于 V2 构建入口。
