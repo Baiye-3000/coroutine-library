@@ -4,6 +4,8 @@
 
 #include <chrono>
 #include <vector>
+#include <atomic>
+#include <thread>
 
 int main() {
     using coroutine::WorkerLoadSnapshot;
@@ -24,5 +26,18 @@ int main() {
     auto copy = collector.snapshot();
     copy.workers[0].queue_depth = 99;
     EXPECT_TRUE(collector.snapshot().workers[0].queue_depth == 2);
+    std::atomic<int> samples{0};
+    collector.start([&] {
+        ++samples;
+        return std::vector<WorkerLoadSnapshot>{{0, 0, static_cast<std::size_t>(samples.load()), 0.1, 1, {}, true, false, {}}};
+    });
+    for (int attempt = 0; attempt < 50 && samples.load() < 2; ++attempt) {
+        std::this_thread::sleep_for(std::chrono::milliseconds{5});
+    }
+    EXPECT_TRUE(samples.load() >= 2);
+    collector.stop();
+    const auto stopped_samples = samples.load();
+    std::this_thread::sleep_for(std::chrono::milliseconds{20});
+    EXPECT_TRUE(samples.load() == stopped_samples);
     return test::finish("metrics_test");
 }

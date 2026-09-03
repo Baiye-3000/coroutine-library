@@ -25,6 +25,7 @@ struct RuntimeConfig {
     double wait_time_weight = 0.20;
     double history_weight = 0.10;
     double affinity_bonus = 0.10;
+    bool pin_workers = false;
 };
 
 std::size_t default_worker_count() noexcept;

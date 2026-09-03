@@ -13,6 +13,8 @@ int main() {
     EXPECT_TRUE(coroutine::effective_worker_count(config) == 3);
     std::string error;
     EXPECT_TRUE(coroutine::validate_config(config, &error));
+    config.pin_workers = true;
+    EXPECT_TRUE(coroutine::validate_config(config, &error));
     config.metrics_interval = std::chrono::milliseconds{0};
     EXPECT_TRUE(!coroutine::validate_config(config, &error));
     config.metrics_interval = std::chrono::milliseconds{100};

@@ -20,6 +20,7 @@ add_library(coroutine_runtime STATIC
     src/config.cpp
     src/load_balancer.cpp
     src/metrics_collector.cpp
+    src/cpu_affinity.cpp
     src/scheduler.cpp
     src/work_stealing_deque.cpp
     src/timer_queue.cpp

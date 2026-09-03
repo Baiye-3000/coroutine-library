@@ -12,6 +12,40 @@ MetricsCollector::MetricsCollector(std::chrono::milliseconds interval)
     }
 }
 
+MetricsCollector::~MetricsCollector() { stop(); }
+
+void MetricsCollector::start(const SnapshotSource& source) {
+    if (!source) throw std::invalid_argument("metrics snapshot source is empty");
+    stop();
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        source_ = source;
+        stopping_ = false;
+    }
+    thread_ = std::thread([this] {
+        for (;;) {
+            SnapshotSource source;
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (stopping_) return;
+                source = source_;
+            }
+            collect(source);
+            std::unique_lock<std::mutex> lock(mutex_);
+            if (wake_.wait_for(lock, interval_, [this] { return stopping_; })) return;
+        }
+    });
+}
+
+void MetricsCollector::stop() noexcept {
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        stopping_ = true;
+    }
+    wake_.notify_all();
+    if (thread_.joinable()) thread_.join();
+}
+
 RuntimeMetrics MetricsCollector::collect(const SnapshotSource& source,
                                          std::size_t submitted_count,
                                          std::size_t steal_count,
@@ -32,11 +66,15 @@ RuntimeMetrics MetricsCollector::collect(const SnapshotSource& source,
         [](std::size_t total, const WorkerLoadSnapshot& worker) {
             return total + worker.completed_count;
         });
-    latest_ = result;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        latest_ = result;
+    }
     return result;
 }
 
 RuntimeMetrics MetricsCollector::snapshot() const {
+    std::lock_guard<std::mutex> lock(mutex_);
     return latest_;
 }
 

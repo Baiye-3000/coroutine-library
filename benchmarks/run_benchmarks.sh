@@ -3,6 +3,7 @@ set -u
 
 mode=""
 output_root="out/benchmarks"
+build_dir="${COROUTINE_BUILD_DIR:-build/debug}"
 for arg in "$@"; do
     case "$arg" in
         --mode) : ;;
@@ -35,13 +36,30 @@ report="$output_root/${mode}-$(date +%Y%m%d-%H%M%S).md"
     echo
 } > "$report"
 
-if [[ "$mode" != "baseline" ]]; then
-    echo "Status: unavailable (M0 implements baseline collection only; this mode is scheduled for a later milestone)." >> "$report"
+if [[ "$mode" == "load-balance" ]]; then
+    benchmark="$build_dir/benchmarks/scheduler_benchmark"
+    if [[ ! -x "$benchmark" ]]; then
+        echo "Status: unavailable (missing $benchmark; build the debug benchmark target first)." >> "$report"
+        echo "$report"
+        exit 0
+    fi
+    for run in 1 2 3; do
+        raw="$output_root/raw/load-balance-$run.txt"
+        "$benchmark" 4 100000 > "$raw" 2>&1 || true
+        echo "- Run $run raw output: $raw" >> "$report"
+    done
+    echo "- Status: collected three load-balance runs" >> "$report"
     echo "$report"
     exit 0
 fi
 
-server="build/debug/benchmarks/baseline_server"
+if [[ "$mode" != "baseline" ]]; then
+    echo "Status: unavailable (mode is not implemented in this milestone)." >> "$report"
+    echo "$report"
+    exit 0
+fi
+
+server="$build_dir/benchmarks/baseline_server"
 if [[ ! -x "$server" ]]; then
     echo "Status: unavailable (missing $server; build the debug benchmark target first)." >> "$report"
     echo "$report"

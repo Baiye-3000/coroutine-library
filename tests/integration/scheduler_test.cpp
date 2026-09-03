@@ -23,6 +23,7 @@ int main() {
     }
     EXPECT_TRUE(completed.load() == 20);
     EXPECT_TRUE(scheduler.load_snapshot().size() == 2);
+    for (const auto& worker : scheduler.load_snapshot()) EXPECT_TRUE(worker.cpu_id >= -1);
     scheduler.stop();
     EXPECT_TRUE(!scheduler.is_running());
     EXPECT_TRUE(scheduler.submit([] {}) == coroutine::SubmitResult::stopped);

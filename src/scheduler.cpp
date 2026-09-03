@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <stdexcept>
+#include <algorithm>
 
 namespace coroutine {
 
@@ -9,7 +10,7 @@ thread_local Scheduler* Scheduler::current_scheduler_ = nullptr;
 thread_local std::size_t Scheduler::current_worker_id_ = static_cast<std::size_t>(-1);
 
 Scheduler::Scheduler(RuntimeConfig config)
-    : config_(config), load_balancer_(config_) {
+    : config_(config), load_balancer_(config_), metrics_collector_(config.metrics_interval) {
     if (!validate_config(config_)) {
         throw std::invalid_argument("invalid runtime configuration");
     }
@@ -34,6 +35,7 @@ void Scheduler::start() {
     for (auto& worker : workers_) {
         worker->thread = std::thread(&Scheduler::run_worker, this, std::ref(*worker));
     }
+    metrics_collector_.start([this] { return load_snapshot(); });
 }
 
 void Scheduler::stop() {
@@ -46,6 +48,7 @@ void Scheduler::stop() {
         worker->ingress.close();
         worker->wake.notify_all();
     }
+    metrics_collector_.stop();
     for (auto& worker : workers_) {
         if (worker->thread.joinable()) {
             worker->thread.join();
@@ -137,9 +140,15 @@ RunnableTask* Scheduler::take_task(Worker& worker) {
 void Scheduler::run_worker(Worker& worker) {
     current_scheduler_ = this;
     current_worker_id_ = worker.id;
+    const auto cpus = CpuAffinity::online_cpus();
+    if (!cpus.empty()) {
+        worker.cpu_id = cpus[worker.id % cpus.size()];
+        if (config_.pin_workers && !CpuAffinity::bind_current_thread(worker.cpu_id)) worker.cpu_id = -1;
+    }
     {
         std::lock_guard<std::mutex> lock(worker.snapshot_mutex);
         worker.snapshot.running = true;
+        worker.snapshot.cpu_id = worker.cpu_id;
         worker.snapshot.idle = false;
         worker.snapshot.last_update = std::chrono::steady_clock::now();
     }
@@ -162,6 +171,7 @@ void Scheduler::run_worker(Worker& worker) {
             worker.snapshot.idle = false;
             worker.snapshot.queue_depth = worker.local.approximate_size();
         }
+        const auto started = std::chrono::steady_clock::now();
         try {
             task->function();
         } catch (...) {
@@ -172,6 +182,9 @@ void Scheduler::run_worker(Worker& worker) {
         {
             std::lock_guard<std::mutex> lock(worker.snapshot_mutex);
             ++worker.snapshot.completed_count;
+            worker.snapshot.cpu_usage = std::clamp(
+                std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count() / 0.01,
+                0.0, 1.0);
             worker.snapshot.queue_depth = worker.local.approximate_size();
             worker.snapshot.last_update = std::chrono::steady_clock::now();
         }
