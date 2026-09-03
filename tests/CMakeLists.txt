@@ -44,3 +44,28 @@ target_compile_options(scheduler_stress PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic>
 )
 add_test(NAME scheduler_stress COMMAND scheduler_stress)
+
+add_executable(timer_test unit/timer_test.cpp)
+target_link_libraries(timer_test PRIVATE coroutine_runtime)
+target_compile_options(timer_test PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic>)
+add_test(NAME timer_test COMMAND timer_test)
+
+add_executable(fd_registry_test unit/fd_registry_test.cpp)
+target_link_libraries(fd_registry_test PRIVATE coroutine_runtime)
+target_compile_options(fd_registry_test PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic>)
+add_test(NAME fd_registry_test COMMAND fd_registry_test)
+
+add_executable(coroutine_test unit/coroutine_test.cpp)
+target_link_libraries(coroutine_test PRIVATE coroutine_runtime)
+target_compile_options(coroutine_test PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic>)
+add_test(NAME coroutine_test COMMAND coroutine_test)
+
+add_executable(hook_test integration/hook_test.cpp)
+target_link_libraries(hook_test PRIVATE coroutine_runtime)
+target_compile_options(hook_test PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic>)
+add_test(NAME hook_test COMMAND hook_test)
+
+add_executable(poll_hook_test integration/poll_hook_test.cpp)
+target_link_libraries(poll_hook_test PRIVATE coroutine_runtime)
+target_compile_options(poll_hook_test PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic>)
+add_test(NAME poll_hook_test COMMAND poll_hook_test)

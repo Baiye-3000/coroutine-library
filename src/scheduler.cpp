@@ -5,6 +5,9 @@
 
 namespace coroutine {
 
+thread_local Scheduler* Scheduler::current_scheduler_ = nullptr;
+thread_local std::size_t Scheduler::current_worker_id_ = static_cast<std::size_t>(-1);
+
 Scheduler::Scheduler(RuntimeConfig config)
     : config_(config), load_balancer_(config_) {
     if (!validate_config(config_)) {
@@ -15,6 +18,7 @@ Scheduler::Scheduler(RuntimeConfig config)
     for (std::size_t index = 0; index < count; ++index) {
         auto worker = std::make_unique<Worker>(index);
         worker->id = index;
+        worker->event_loop = std::make_unique<EventLoop>(index);
         workers_.push_back(std::move(worker));
     }
 }
@@ -79,6 +83,20 @@ SubmitResult Scheduler::submit_to(std::size_t worker, Task task) {
     return enqueue(worker, std::move(task));
 }
 
+SubmitResult Scheduler::submit_coroutine(std::shared_ptr<Coroutine> coroutine, SubmitOptions options) {
+    if (!coroutine) return SubmitResult::invalid_task;
+    return submit([this, coroutine = std::move(coroutine)] {
+        Coroutine::set_current_owner(coroutine);
+        if (coroutine->state() == CoroutineState::ready || coroutine->state() == CoroutineState::waiting) {
+            coroutine->resume();
+        }
+        Coroutine::set_current_owner(nullptr);
+        if (coroutine->state() == CoroutineState::ready) {
+            submit_coroutine(coroutine, SubmitOptions{current_worker_id_});
+        }
+    }, std::move(options));
+}
+
 SubmitResult Scheduler::enqueue(std::size_t worker, Task task) {
     auto node = std::make_unique<RunnableTask>();
     node->function = std::move(task);
@@ -117,6 +135,8 @@ RunnableTask* Scheduler::take_task(Worker& worker) {
 }
 
 void Scheduler::run_worker(Worker& worker) {
+    current_scheduler_ = this;
+    current_worker_id_ = worker.id;
     {
         std::lock_guard<std::mutex> lock(worker.snapshot_mutex);
         worker.snapshot.running = true;
@@ -133,9 +153,8 @@ void Scheduler::run_worker(Worker& worker) {
                 worker.snapshot.last_update = std::chrono::steady_clock::now();
             }
             std::unique_lock<std::mutex> lock(worker.wake_mutex);
-            worker.wake.wait_for(lock, std::chrono::milliseconds{10}, [this] {
-                return !running_.load() || stopping_.load();
-            });
+            lock.unlock();
+            worker.event_loop->run_once(std::chrono::milliseconds{10});
             continue;
         }
         {
@@ -162,6 +181,8 @@ void Scheduler::run_worker(Worker& worker) {
         worker.snapshot.running = false;
         worker.snapshot.idle = true;
     }
+    current_scheduler_ = nullptr;
+    current_worker_id_ = static_cast<std::size_t>(-1);
 }
 
 RuntimeConfig Scheduler::config() const { return config_; }
@@ -182,6 +203,13 @@ RuntimeMetrics Scheduler::metrics_snapshot() const {
     MetricsCollector collector(config_.metrics_interval);
     return collector.collect([this] { return load_snapshot(); },
                              submitted_count_.load(), steal_count_.load());
+}
+
+Scheduler* Scheduler::current() noexcept { return current_scheduler_; }
+std::size_t Scheduler::current_worker_id() noexcept { return current_worker_id_; }
+EventLoop* Scheduler::current_event_loop() noexcept {
+    if (current_scheduler_ == nullptr || current_worker_id_ >= current_scheduler_->workers_.size()) return nullptr;
+    return current_scheduler_->workers_[current_worker_id_]->event_loop.get();
 }
 
 } // namespace coroutine

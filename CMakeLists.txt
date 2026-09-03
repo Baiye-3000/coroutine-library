@@ -22,11 +22,19 @@ add_library(coroutine_runtime STATIC
     src/metrics_collector.cpp
     src/scheduler.cpp
     src/work_stealing_deque.cpp
+    src/timer_queue.cpp
+    src/event_loop.cpp
+    src/fd_registry.cpp
+    src/coroutine.cpp
+    src/stack_allocator.cpp
+    src/hook.cpp
+    src/poll_hook.cpp
+    src/socket_hooks.cpp
 )
 target_include_directories(coroutine_runtime PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
 )
-target_link_libraries(coroutine_runtime INTERFACE Threads::Threads)
+target_link_libraries(coroutine_runtime PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
 
 if(COROUTINE_BUILD_TESTS)
     enable_testing()

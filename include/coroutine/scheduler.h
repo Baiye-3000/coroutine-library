@@ -3,6 +3,8 @@
 #include "coroutine/load_balancer.h"
 #include "coroutine/metrics.h"
 #include "coroutine/work_stealing_deque.h"
+#include "coroutine/coroutine.h"
+#include "coroutine/event_loop.h"
 
 #include <atomic>
 #include <condition_variable>
@@ -33,9 +35,14 @@ public:
     bool is_running() const noexcept;
     SubmitResult submit(Task task, SubmitOptions options = {});
     SubmitResult submit_to(std::size_t worker, Task task);
+    SubmitResult submit_coroutine(std::shared_ptr<Coroutine> coroutine,
+                                  SubmitOptions options = {});
     RuntimeConfig config() const;
     std::vector<WorkerLoadSnapshot> load_snapshot() const;
     RuntimeMetrics metrics_snapshot() const;
+    static Scheduler* current() noexcept;
+    static std::size_t current_worker_id() noexcept;
+    static EventLoop* current_event_loop() noexcept;
 
 private:
     struct Worker {
@@ -50,11 +57,15 @@ private:
         std::condition_variable wake;
         std::mutex wake_mutex;
         std::thread thread;
+        std::unique_ptr<EventLoop> event_loop;
     };
 
     void run_worker(Worker& worker);
     RunnableTask* take_task(Worker& worker);
     SubmitResult enqueue(std::size_t worker, Task task);
+
+    static thread_local Scheduler* current_scheduler_;
+    static thread_local std::size_t current_worker_id_;
 
     RuntimeConfig config_;
     LoadBalancer load_balancer_;
