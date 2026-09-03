@@ -16,8 +16,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(coroutine_runtime INTERFACE)
-target_include_directories(coroutine_runtime INTERFACE
+add_library(coroutine_runtime STATIC
+    src/config.cpp
+    src/load_balancer.cpp
+    src/metrics_collector.cpp
+)
+target_include_directories(coroutine_runtime PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
 )
 target_link_libraries(coroutine_runtime INTERFACE Threads::Threads)
