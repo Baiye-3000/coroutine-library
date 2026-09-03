@@ -63,4 +63,9 @@ FATAL: ThreadSanitizer: unexpected memory mapping
 
 ## 门禁
 
-M2 测试已完成，满足提交条件。提交时仅纳入 M2 实现、测试和报告，保留用户已有的 `fiber_lib/` 与 `.vscode/` 修改；提交号和远端分支将在推送后补录。
+M2 测试已完成。
+
+- M2 提交：`3bf6639`（`M2: add lock-free queues and scheduler`）
+- 目标远端：`https://github.com/Baiye-3000/coroutine-library.git`
+- 已推送分支：`feature-x`
+- 提交范围核验：通过，未包含 `fiber_lib/`、`.vscode/` 或构建产物
