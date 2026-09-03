@@ -45,4 +45,9 @@ ctest --test-dir /tmp/coroutine-lib-build-m1 \
 
 ## 门禁
 
-M1 测试已完成。提交前只暂存 M1 文件，保留用户已有的 `fiber_lib/` 和 `.vscode/` 修改；提交号和远端分支将在推送后补录。
+M1 测试已完成。
+
+- M1 提交：`04e2ff1`（`M1: add configuration and load balancing`）
+- 目标远端：`https://github.com/Baiye-3000/coroutine-library.git`
+- 已推送分支：`feature-x`
+- 提交范围核验：通过，未包含 `fiber_lib/` 或 `.vscode/`
