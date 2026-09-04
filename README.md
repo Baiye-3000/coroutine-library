@@ -129,3 +129,10 @@ benchmarks/run_benchmarks.sh --mode baseline
 ```
 
 M0 基线记录见 `docs/refactor-v2/reports/m0-baseline.md`，指标定义见 `docs/refactor-v2/benchmarks.md`。当前 `fiber_lib/` 目录是保留的旧版教学代码，不属于 V2 构建入口。
+
+M6 栈策略与最终验收记录见 `docs/refactor-v2/reports/m6-final.md`。容量基准命令：
+
+```shell
+COROUTINE_BUILD_DIR=build/m6-debug benchmarks/run_benchmarks.sh --mode capacity --coroutines 100000
+COROUTINE_BUILD_DIR=build/m6-debug benchmarks/run_benchmarks.sh --mode comparison
+```

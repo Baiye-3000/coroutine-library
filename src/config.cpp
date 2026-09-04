@@ -27,6 +27,12 @@ bool validate_config(const RuntimeConfig& config, std::string* error) {
     if (config.metrics_interval.count() <= 0) {
         return fail("metrics_interval must be positive");
     }
+    if (config.stack_initial_size < 16 * 1024) {
+        return fail("stack_initial_size must be at least 16384");
+    }
+    if (config.stack_max_size < config.stack_initial_size) {
+        return fail("stack_max_size must not be smaller than stack_initial_size");
+    }
     const double values[] = {
         config.affinity_max_load, config.overload_threshold, config.idle_threshold,
         config.queue_depth_weight, config.cpu_usage_weight, config.wait_time_weight,

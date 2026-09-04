@@ -14,7 +14,7 @@ thread_local std::shared_ptr<Coroutine> owner_coroutine;
 }
 
 struct Coroutine::Impl {
-    explicit Impl(Function fn, std::size_t size) : function(std::move(fn)), stack(size) {
+    explicit Impl(Function fn, StackAllocator::Options options) : function(std::move(fn)), stack(options) {
         getcontext(&context);
         context.uc_stack.ss_sp = stack.data();
         context.uc_stack.ss_size = stack.size();
@@ -44,7 +44,11 @@ struct Coroutine::Impl {
 };
 
 Coroutine::Coroutine(Function function, std::size_t stack_size)
-    : impl_(std::make_unique<Impl>(std::move(function), stack_size)) {
+    : impl_(std::make_unique<Impl>(std::move(function), StackAllocator::Options{stack_size, stack_size, false, false})) {
+    impl_->owner = this;
+}
+Coroutine::Coroutine(Function function, StackAllocator::Options stack_options)
+    : impl_(std::make_unique<Impl>(std::move(function), stack_options)) {
     impl_->owner = this;
 }
 Coroutine::~Coroutine() = default;

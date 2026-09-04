@@ -26,6 +26,9 @@ struct RuntimeConfig {
     double history_weight = 0.10;
     double affinity_bonus = 0.10;
     bool pin_workers = false;
+    std::size_t stack_initial_size = 64 * 1024;
+    std::size_t stack_max_size = 1024 * 1024;
+    bool stack_pool_enabled = false;
 };
 
 std::size_t default_worker_count() noexcept;

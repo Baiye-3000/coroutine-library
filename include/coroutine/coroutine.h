@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include "coroutine/stack_allocator.h"
 
 namespace coroutine {
 
@@ -13,6 +14,7 @@ public:
     using Function = std::function<void()>;
 
     explicit Coroutine(Function function, std::size_t stack_size = 64 * 1024);
+    Coroutine(Function function, StackAllocator::Options stack_options);
     ~Coroutine();
     Coroutine(const Coroutine&) = delete;
     Coroutine& operator=(const Coroutine&) = delete;

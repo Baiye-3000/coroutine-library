@@ -53,6 +53,48 @@ if [[ "$mode" == "load-balance" ]]; then
     exit 0
 fi
 
+if [[ "$mode" == "capacity" ]]; then
+    benchmark="$build_dir/benchmarks/coroutine_capacity"
+    count=100000
+    for arg in "$@"; do
+        case "$arg" in --coroutines) : ;; --coroutines=*) count="${arg#*=}" ;; esac
+    done
+    if [[ ! -x "$benchmark" ]]; then
+        echo "Status: unavailable (missing $benchmark; build the benchmark target first)." >> "$report"
+        echo "$report"
+        exit 0
+    fi
+    for strategy in dynamic pool; do
+        raw="$output_root/raw/capacity-$strategy.txt"
+        "$benchmark" "$count" "$strategy" > "$raw" 2>&1 || true
+        echo "- $strategy raw output: $raw" >> "$report"
+    done
+    echo "- Status: collected capacity runs for $count coroutines" >> "$report"
+    echo "$report"
+    exit 0
+fi
+
+if [[ "$mode" == "comparison" ]]; then
+    benchmark="$build_dir/benchmarks/scheduler_benchmark"
+    if [[ -x "$benchmark" ]]; then
+        for run in 1 2 3; do
+            raw="$output_root/raw/comparison-$run.txt"
+            "$benchmark" 4 100000 > "$raw" 2>&1 || true
+            echo "- Run $run runtime raw output: $raw" >> "$report"
+        done
+    else
+        echo "- Runtime comparison: unavailable (missing $benchmark)" >> "$report"
+    fi
+    if command -v perf >/dev/null 2>&1 && perf stat -o /dev/null true >/dev/null 2>&1; then
+        echo "- perf: available; use baseline mode for ApacheBench counters" >> "$report"
+    else
+        echo "- perf: unavailable (WSL kernel does not permit perf stat)" >> "$report"
+    fi
+    echo "- Status: collected runtime comparison data" >> "$report"
+    echo "$report"
+    exit 0
+fi
+
 if [[ "$mode" != "baseline" ]]; then
     echo "Status: unavailable (mode is not implemented in this milestone)." >> "$report"
     echo "$report"
